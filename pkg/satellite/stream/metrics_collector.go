@@ -106,13 +106,14 @@ func (metrics *MetricsCollector) collectTelemetry(telemetry *stellarstation.Tele
 		metrics.collectMessage(len(telemetry.Data))
 
 		// update first and last byte timestamp for the pass
+		now := timestampNow()
 		if metrics.starpassTimeFirstByteReceived == nil || toTime(metrics.starpassTimeFirstByteReceived).After(*toTime(telemetry.TimeFirstByteReceived)) {
 			metrics.starpassTimeFirstByteReceived = telemetry.TimeFirstByteReceived
-			metrics.localTimeFirstByteReceived = timestampNow()
+			metrics.localTimeFirstByteReceived = now
 		}
 		if metrics.starpassTimeLastByteReceived == nil || toTime(metrics.starpassTimeLastByteReceived).Before(*toTime(telemetry.TimeLastByteReceived)) {
 			metrics.starpassTimeLastByteReceived = telemetry.TimeLastByteReceived
-			metrics.localTimeLastByteReceived = timestampNow()
+			metrics.localTimeLastByteReceived = now
 		}
 
 		// save details for instantaneous rates
@@ -353,6 +354,19 @@ func humanReadableNanoSeconds(delay int64) string {
 	return fmt.Sprintf("%.1f %s", nanos, ci[idx])
 }
 
+func (metrics *MetricsCollector) doLogStats() {
+	// check for expired samples
+	metrics.writeLock.Lock()
+	if len(metrics.messageBuffer) > 0 {
+		lastChunk := metrics.messageBuffer[len(metrics.messageBuffer)-1]
+		if lastChunk.ReceivedTime.Before(time.Now().Add(-time.Duration(InstantSampleSeconds) * time.Second)) {
+			metrics.messageBuffer = make([]telemetryWithTimestamp, 0)
+		}
+	}
+	metrics.writeLock.Unlock()
+	metrics.logStats()
+}
+
 // StartStatsEmitScheduler this should be ran in separate thread
 func (metrics *MetricsCollector) startStatsEmitSchedulerWorker(emitRateMillis int) {
 	metrics.statsLoggingScheduler = true
@@ -360,16 +374,7 @@ func (metrics *MetricsCollector) startStatsEmitSchedulerWorker(emitRateMillis in
 	for {
 		<-uptimeTicker.C
 		if metrics.statsLoggingScheduler {
-			// check for expired samples
-			metrics.writeLock.Lock()
-			if len(metrics.messageBuffer) > 0 {
-				lastChunk := metrics.messageBuffer[len(metrics.messageBuffer)-1]
-				if lastChunk.ReceivedTime.Before(time.Now().Add(-time.Duration(InstantSampleSeconds) * time.Second)) {
-					metrics.messageBuffer = make([]telemetryWithTimestamp, 0)
-				}
-			}
-			metrics.writeLock.Unlock()
-			metrics.logStats()
+			metrics.doLogStats()
 		} else {
 			// stop scheduler
 			return

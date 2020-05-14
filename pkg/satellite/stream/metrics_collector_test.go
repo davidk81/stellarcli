@@ -23,6 +23,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	stellarstation "github.com/infostellarinc/go-stellarstation/api/v1"
+	"github.com/infostellarinc/stellarcli/pkg/logger"
 )
 
 func assertEqual(t *testing.T, a interface{}, b interface{}, message string) {
@@ -104,4 +105,57 @@ func TestReport(t *testing.T) {
 		metrics.collectTelemetry(t1)
 	}
 	metrics.logReport()
+}
+
+func nullLogger(format string, v ...interface{}) {
+
+}
+
+func TestPerf(t *testing.T) {
+	metrics := *NewMetricsCollector(nullLogger)
+	metrics.setPlanId("test_plan_1")
+	metrics.setStreamId("stream_1")
+	start := time.Now().Add(-time.Duration(5) * time.Minute)
+
+	startTime := time.Now()
+	records := int64(1e6)
+	for i := int64(0); i < records; i++ {
+		start = start.Add(time.Millisecond * time.Duration(i*2000))
+		t1 := createTelemetry(&start, 2000)
+		metrics.collectTelemetry(t1)
+	}
+	duration := time.Since(startTime)
+	t.Logf("%d ns per collectTelemetry\n", duration.Nanoseconds()/records)
+
+	startTime = time.Now()
+	records = int64(1e1)
+	for i := int64(0); i < records; i++ {
+		metrics.doLogStats()
+	}
+	duration = time.Since(startTime)
+	t.Logf("%d ns per doLogStats\n", duration.Nanoseconds()/records)
+}
+
+func TestAsync(t *testing.T) {
+	logger.SetVerbose(true)
+	metrics := *NewMetricsCollector(logger.PrintfRawLn)
+	metrics.setPlanId("test_plan_1")
+	metrics.setStreamId("stream_1")
+
+	metrics.StartStatsEmitScheduler(2000)
+
+	startTime := time.Now()
+	duration := time.Since(startTime)
+
+	i := 0
+	for duration.Minutes() < 2 {
+		now := time.Now()
+		t1 := createTelemetry(&now, 0)
+		metrics.collectTelemetry(t1)
+		if i%1e6 == 0 {
+			logger.Verbose("central frequency (MHz): %.2f\n", 99.7)
+		}
+		i++
+		duration = time.Since(startTime)
+	}
 }

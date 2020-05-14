@@ -124,7 +124,7 @@ func (metrics *MetricsCollector) collectTelemetry(telemetry *stellarstation.Tele
 		metrics.writeLock.Lock()
 		metrics.messageBuffer = append(metrics.messageBuffer, msg)
 
-		// Keep 5 seconds worth of samples, but no less than InstantMinSamples samples, and no more than InstantMaxSamples; remove oldest sample if:
+		// Keep 10 seconds worth of samples, but no less than InstantMinSamples samples, and no more than InstantMaxSamples; remove oldest sample if:
 		// 1. list larger than InstantMinSamples && oldest sample is older than "now - InstantSampleSeconds"
 		// 2. list larger than InstantMaxSamples
 		for (len(metrics.messageBuffer) > InstantMinSamples && metrics.messageBuffer[0].ReceivedTime.UnixNano() < time.Now().UnixNano()-(InstantSampleSeconds*1e9)) ||
@@ -230,8 +230,10 @@ func (metrics *MetricsCollector) logStats() {
 	iDelayNanos := humanReadableNanoSeconds(metrics.instantDelay())
 	iRateStr := humanReadableCountSI(metrics.instantRate())
 	size := humanReadableBytes(metrics.totalBytesReceived)
-	metrics.logger("[STATS] %s, plan_id: %s, %3d msgs, bytes: %9v, rate: %9vbps, delay: %9v",
-		time.Now().Format("20060102 15:04:05"), metrics.planId, metrics.totalMessagesReceived, size, iRateStr, iDelayNanos)
+	if metrics.planId != "" {
+		metrics.logger("[STATS] %s, plan_id: %s, %3d msgs, bytes: %9v, rate: %9vbps, delay: %9v",
+			time.Now().Format("20060102 15:04:05"), metrics.planId, metrics.totalMessagesReceived, size, iRateStr, iDelayNanos)
+	}
 }
 
 // return avg rate for entire plan

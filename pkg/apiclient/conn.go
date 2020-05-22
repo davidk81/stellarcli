@@ -47,5 +47,10 @@ func Dial() (*grpc.ClientConn, error) {
 	return grpc.Dial(
 		apiUrl,
 		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
-		grpc.WithPerRPCCredentials(creds))
+		grpc.WithPerRPCCredentials(creds),
+		grpc.WithInitialWindowSize((1<<20)*4),
+		grpc.WithReadBufferSize((1<<20)*64),
+		grpc.WithWriteBufferSize((1<<20)*64),
+		grpc.WithMaxMsgSize((1<<20)*4),
+		grpc.WithInitialConnWindowSize((1<<20)*64))
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -52,6 +53,7 @@ type SatelliteStreamOptions struct {
 	IsVerbose       bool
 	ShowStats       bool
 	TelemetryFile   *os.File
+	CpuProfile      string
 
 	CorrectOrder   bool
 	DelayThreshold time.Duration
@@ -82,6 +84,7 @@ type satelliteStream struct {
 	showStats      bool
 	telemetryFile  *os.File
 	acceptedPlanId []string
+	cpuProfile     string
 
 	correctOrder   bool
 	delayThreshold time.Duration
@@ -103,6 +106,7 @@ func OpenSatelliteStream(o *SatelliteStreamOptions, recvChan chan<- []byte) (Sat
 		showStats:          o.ShowStats,
 		telemetryFile:      o.TelemetryFile,
 		acceptedPlanId:     o.AcceptedPlanId,
+		cpuProfile:         o.CpuProfile,
 
 		correctOrder:   o.CorrectOrder,
 		delayThreshold: o.DelayThreshold,
@@ -377,6 +381,17 @@ func (ss *satelliteStream) openStream(resumeStreamMessageAckId string) error {
 }
 
 func (ss *satelliteStream) start() (func(), error) {
+	var cpuProfile *os.File = nil
+	if ss.cpuProfile != "" {
+		f, err := os.Create(ss.cpuProfile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+	}
+
 	log.SetDebug(ss.isDebug)
 	log.SetVerbose(ss.isVerbose)
 
@@ -403,6 +418,11 @@ func (ss *satelliteStream) start() (func(), error) {
 			metrics.logReport()
 		}
 		ss.CloseFileWriter()
+
+		if ss.cpuProfile != "" {
+			pprof.StopCPUProfile()
+			cpuProfile.Close() // error handling omitted
+		}
 	}
 	return cleanup, nil
 }

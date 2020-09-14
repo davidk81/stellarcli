@@ -19,13 +19,13 @@ import (
 	"context"
 	"io"
 	"os"
-	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/pkg/profile"
 	"google.golang.org/grpc"
 
 	stellarstation "github.com/infostellarinc/go-stellarstation/api/v1"
@@ -381,15 +381,11 @@ func (ss *satelliteStream) openStream(resumeStreamMessageAckId string) error {
 }
 
 func (ss *satelliteStream) start() (func(), error) {
-	var cpuProfile *os.File = nil
+	var p interface {
+		Stop()
+	} = nil
 	if ss.cpuProfile != "" {
-		f, err := os.Create(ss.cpuProfile)
-		if err != nil {
-			log.Fatal("could not create CPU profile: ", err)
-		}
-		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("could not start CPU profile: ", err)
-		}
+		p = profile.Start(profile.TraceProfile, profile.ProfilePath("./"+ss.cpuProfile), profile.NoShutdownHook)
 	}
 
 	log.SetDebug(ss.isDebug)
@@ -419,9 +415,8 @@ func (ss *satelliteStream) start() (func(), error) {
 		}
 		ss.CloseFileWriter()
 
-		if ss.cpuProfile != "" {
-			pprof.StopCPUProfile()
-			cpuProfile.Close() // error handling omitted
+		if p != nil {
+			p.Stop()
 		}
 	}
 	return cleanup, nil

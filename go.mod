@@ -10,7 +10,9 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
+	github.com/pkg/profile v1.5.0
 	github.com/spf13/cobra v0.0.5
+	golang.org/dl v0.0.0-20200909201834-1fb66e01de4d // indirect
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
 	google.golang.org/appengine v1.6.1 // indirect

@@ -16,6 +16,8 @@
 package flag
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +27,8 @@ type CpuProfile struct {
 
 // AddFlags Add a flag to the command.
 func (f *CpuProfile) AddFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&f.FileName, "cpu-profile", "", "", "[Alpha feature] The file to write cpu profile to. Overwrites to file if it already exists. (default none)")
+	val := "cpu-profile-" + time.Now().Format("01-02-2006") + ".pprof"
+	cmd.Flags().StringVarP(&f.FileName, "cpu-profile", "", val, "[Alpha feature] The file to write cpu profile to. Overwrites to file if it already exists. default: "+val)
 }
 
 // Validate flag values.

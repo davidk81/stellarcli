@@ -27,7 +27,7 @@ import (
 
 var (
 	// Default proxy protocol.
-	defaultProxyProtocol = "udp"
+	defaultProxyProtocol = "tcp"
 
 	// Supported proxy.
 	availableProxy = []string{"udp", "tcp"}

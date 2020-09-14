@@ -27,7 +27,7 @@ type CpuProfile struct {
 
 // AddFlags Add a flag to the command.
 func (f *CpuProfile) AddFlags(cmd *cobra.Command) {
-	val := "cpu-profile-" + time.Now().Format("01-02-2006") + ".pprof"
+	val := "cpu-profile-" + time.Now().Format("2006.01.02-15:04:05") + ".pprof"
 	cmd.Flags().StringVarP(&f.FileName, "cpu-profile", "", val, "[Alpha feature] The file to write cpu profile to. Overwrites to file if it already exists. default: "+val)
 }
 

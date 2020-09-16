@@ -54,6 +54,7 @@ type SatelliteStreamOptions struct {
 	ShowStats       bool
 	TelemetryFile   *os.File
 	CpuProfile      string
+	ProxyMode       string
 
 	CorrectOrder   bool
 	DelayThreshold time.Duration
@@ -85,6 +86,7 @@ type satelliteStream struct {
 	telemetryFile  *os.File
 	acceptedPlanId []string
 	cpuProfile     string
+	proxyMode      string
 
 	correctOrder   bool
 	delayThreshold time.Duration
@@ -107,6 +109,7 @@ func OpenSatelliteStream(o *SatelliteStreamOptions, recvChan chan<- []byte) (Sat
 		telemetryFile:      o.TelemetryFile,
 		acceptedPlanId:     o.AcceptedPlanId,
 		cpuProfile:         o.CpuProfile,
+		proxyMode:          o.ProxyMode,
 
 		correctOrder:   o.CorrectOrder,
 		delayThreshold: o.DelayThreshold,
@@ -217,7 +220,10 @@ func (ss *satelliteStream) recvLoop() {
 		// Flush half of the data in the priority queue
 		for i := 0; i < numFlush; i++ {
 			telemetry := pq.Pop().(*stellarstation.Telemetry)
-			ss.recvChan <- telemetry.Data
+			if ss.proxyMode != "none" {
+				ss.recvChan <- telemetry.Data
+			}
+
 			if ss.telemetryFileWriter != nil {
 				if _, err := ss.telemetryFileWriter.Write(telemetry.Data); err != nil {
 					panic(err)
@@ -305,7 +311,9 @@ func (ss *satelliteStream) recvLoop() {
 						pq.Push(telemetry)
 					}()
 				} else {
-					ss.recvChan <- payload
+					if ss.proxyMode != "none" {
+						ss.recvChan <- payload
+					}
 					if ss.telemetryFileWriter != nil {
 						if _, err := ss.telemetryFileWriter.Write(payload); err != nil {
 							panic(err)

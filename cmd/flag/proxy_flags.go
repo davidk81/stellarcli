@@ -27,10 +27,10 @@ import (
 
 var (
 	// Default proxy protocol.
-	defaultProxyProtocol = "tcp"
+	defaultProxyProtocol = "none"
 
 	// Supported proxy.
-	availableProxy = []string{"udp", "tcp"}
+	availableProxy = []string{"udp", "tcp", "none"}
 	// Default listen host for UDP.
 	defaultUDPListenHost = "127.0.0.1"
 	// Default listen port for UDP.
@@ -111,6 +111,8 @@ func (f *ProxyFlags) ToProxy() stream.Proxy {
 			log.Fatalf("could not open UDP proxy: %v\n", err)
 		}
 		return p
+	case "none":
+		fallthrough
 	case "tcp":
 		addr := fmt.Sprintf("%s:%d", f.TCPListenHost, f.TCPListenPort)
 		o := &stream.TCPProxyOptions{

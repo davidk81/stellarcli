@@ -79,6 +79,7 @@ func NewOpenStreamCommand() *cobra.Command {
 				ShowStats:       statsFlag.ShowStats,
 				TelemetryFile:   writeFileFlag.TelemetryFile,
 				CpuProfile:      cpuProfileFlag.FileName,
+				ProxyMode:       proxyFlags.ProxyProtocol,
 
 				CorrectOrder:   correctOrderFlags.CorrectOrder,
 				DelayThreshold: correctOrderFlags.DelayThreshold,
